@@ -7,7 +7,7 @@ import json
 
 
 def main():
-    def generate_course_data(num_courses=50, seed=42):
+    def generate_course_data(num_courses=50, seed=42): #генерируем данные курсов(тематика, сложность, продолжительность)
         np.random.seed(seed)
         topics = [
             "Python", "Web Development", "Data Science", "Machine Learning",
@@ -38,7 +38,7 @@ def main():
         course_features["Topics"] = topic_matrix.tolist()
         return course_features
 
-    course_features = generate_course_data()
+    course_features = generate_course_data() #здесь хранятся списки
 
     COURSE_DETAILS = {
         cid: {
@@ -52,7 +52,7 @@ def main():
         for cid in course_features.index
     }
 
-    def generate_synthetic_users(num_users=200, course_features=None, seed=24):
+    def generate_synthetic_users(num_users=200, course_features=None, seed=24): #генерируем пользователей и оценки курсов
         np.random.seed(seed)
         training_data = []
         topics = [col for col in course_features.columns if col.startswith("Topic_")]
@@ -83,7 +83,7 @@ def main():
         df_train = pd.DataFrame(training_data, columns=columns)
         return df_train
 
-    if 'ml_model' not in st.session_state:
+    if 'ml_model' not in st.session_state: #обучаем модель
         df_train = generate_synthetic_users(course_features=course_features)
         X = df_train.drop(columns=["Rating"]).values
         y = df_train["Rating"].values
@@ -93,7 +93,7 @@ def main():
     else:
         ml_model = st.session_state['ml_model']
 
-    def build_course_graph(course_features):
+    def build_course_graph(course_features): #строим граф зависимости курсов на основе тем и уровней сложности
         G = nx.DiGraph()
         for i, cid1 in enumerate(course_features.index):
             for j, cid2 in enumerate(course_features.index):
@@ -108,28 +108,20 @@ def main():
 
     USERS_FILE = "users.json"
 
-    def load_users():
+    def load_users(): #загружаем пользователей из файла
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except FileNotFoundError:
             return {}
 
-    def save_users(users):
+    def save_users(users): #сохраняем пользователей
         with open(USERS_FILE, "w", encoding="utf-8") as f:
             json.dump(users, f, indent=2, ensure_ascii=False)
 
     users = load_users()
 
-    def get_difficulty_label(value):
-        if value <= 2:
-            return "Новичок"
-        elif value == 3:
-            return "Средний"
-        else:
-            return "Продвинутый"
-
-    st.title("Персонализированные IT-учебные планы")
+    st.title("Персонализированные IT-учебные планы") #интерфейс streamlit
     username = st.text_input("Введите имя пользователя:")
     if username:
         if username not in users:
@@ -137,11 +129,11 @@ def main():
             save_users(users)
         st.write(f"Здравствуйте, {username}!")
 
-        status = st.selectbox("Ваш статус:", ["Школьник", "Студент", "Работаю", "Другое"], key="status")
+        #status = st.selectbox("Ваш статус:", ["Школьник", "Студент", "Работаю", "Другое"], key="status")
         level = st.selectbox("Уровень знаний:", ["Ничего не знаю", "Начинающий", "Средний", "Работаю в этой сфере", "Профи"], key="level")
         weekly_hours = st.slider("Сколько часов в неделю вы готовы уделять обучению?", 1, 40, 5, key="hours")
         months = st.slider("Сколько месяцев вы готовы потратить на обучение?", 1, 12, 3, key="months")
-        goal = st.selectbox("Какова ваша цель?", ["Для себя", "Подтянуть знания для учёбы", "Хочу устроиться на работу", "Другое"], key="goal")
+        #goal = st.selectbox("Какова ваша цель?", ["Для себя", "Подтянуть знания для учёбы", "Хочу устроиться на работу", "Другое"], key="goal")
 
         preferences = st.multiselect("Интересующие темы:", [col.replace("Topic_", "") for col in course_features.columns if col.startswith("Topic_")], key="prefs")
 
@@ -153,7 +145,7 @@ def main():
             save_users(users)
             st.success("Статус сохранён.")
 
-        if st.button("Рекомендовать курсы (ML-модель)", key="recommend"):
+        if st.button("Рекомендовать курсы", key="recommend"):
             topics = [col for col in course_features.columns if col.startswith("Topic_")]
             user_vec = np.zeros(len(topics) + 3)
             level_map = {"Ничего не знаю":1, "Начинающий":2, "Средний":3, "Работаю в этой сфере":4, "Профи":5}
@@ -193,7 +185,7 @@ def main():
             if not top:
                 st.warning("Нет подходящих курсов по заданным критериям.")
             else:
-                st.subheader("Рекомендованные IT-курсы (по ML-модели):")
+                st.subheader("Рекомендованные IT-курсы:")
                 for cid, score in top:
                     details = COURSE_DETAILS.get(cid, {})
                     st.markdown(f"### {details.get('name', cid)}")
@@ -225,9 +217,7 @@ def main():
                     st.write("Не удалось построить маршрут обучения.")
                     st.error(str(e))
 
-        st.sidebar.markdown("---")
-        st.sidebar.write("Версия модели: 5.0")
-        st.sidebar.write(f"Дата: {pd.Timestamp.now().date()}")
+
     else:
         st.info("Пожалуйста, введите имя пользователя для начала.")
 
